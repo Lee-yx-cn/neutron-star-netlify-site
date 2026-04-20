@@ -81,8 +81,7 @@ playPauseButton.addEventListener("click", () => {
 });
 
 restartButton.addEventListener("click", () => {
-  pausedOffset = clock.getElapsedTime();
-  activeStageIndex = -1;
+  jumpToProgress(0);
 });
 
 window.addEventListener("resize", handleResize);
@@ -136,6 +135,7 @@ function activateModel(modelId) {
   activeModel = nextModel;
   activeStageIndex = -1;
   pausedOffset = clock.getElapsedTime();
+  pausedAt = pausedOffset;
 
   if (activeExperience) {
     activeExperience.dispose();
@@ -166,10 +166,13 @@ function updateModelInfo() {
 
   stageTimeline.innerHTML = "";
   activeModel.stages.forEach((stage, index) => {
-    const item = document.createElement("div");
+    const item = document.createElement("button");
     item.className = "stage-chip";
+    item.type = "button";
     item.dataset.stageIndex = String(index);
+    item.setAttribute("aria-label", `切换到${stage.label}阶段`);
     item.innerHTML = `<strong>${stage.label}</strong><span>${stage.description}</span>`;
+    item.addEventListener("click", () => jumpToStage(index));
     stageTimeline.appendChild(item);
   });
 
@@ -204,6 +207,37 @@ function updateStageUI(progress) {
   document.querySelectorAll(".stage-chip").forEach((chip) => {
     chip.classList.toggle("active", Number(chip.dataset.stageIndex) === stageIndex);
   });
+}
+
+function getCurrentReferenceTime() {
+  return paused ? pausedAt : clock.getElapsedTime();
+}
+
+function jumpToProgress(progress) {
+  if (!activeExperience) {
+    return;
+  }
+
+  const clamped = Math.min(Math.max(progress, 0), 0.999);
+  const referenceTime = getCurrentReferenceTime();
+  const targetTime = activeExperience.duration * clamped;
+  pausedOffset = referenceTime - targetTime;
+
+  if (paused) {
+    pausedAt = referenceTime;
+  }
+
+  activeExperience.update(0, targetTime);
+  updateStageUI(clamped);
+}
+
+function jumpToStage(stageIndex) {
+  const stage = activeModel.stages[stageIndex];
+  if (!stage) {
+    return;
+  }
+
+  jumpToProgress(stage.range[0]);
 }
 
 function animate() {

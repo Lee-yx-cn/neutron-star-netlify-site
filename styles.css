@@ -292,11 +292,27 @@ body::before {
 }
 
 .stage-chip {
+  appearance: none;
+  width: 100%;
   padding: 14px 14px 12px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
   transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+.stage-chip:hover {
+  transform: translateY(-2px);
+  border-color: rgba(98, 214, 255, 0.38);
+  background: rgba(98, 214, 255, 0.06);
+}
+
+.stage-chip:focus-visible {
+  outline: 2px solid rgba(98, 214, 255, 0.65);
+  outline-offset: 2px;
 }
 
 .stage-chip.active {
