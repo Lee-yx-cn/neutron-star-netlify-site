@@ -138,23 +138,33 @@ function createDipoleTube(radius, shellRadius, phi, color) {
   return tube;
 }
 
-function createAlphaLoop(radius, phi, color) {
+function createAlphaLoop(radius, phi, color, tilt = 0) {
   const points = [];
-  const steps = 100;
+  const outerSteps = 84;
+  const innerSteps = 66;
+  const thetaMin = 0.32;
+  const thetaMax = Math.PI - 0.32;
+  const outerScale = radius * 1.72;
+  const innerBase = radius * 0.54;
 
-  for (let step = 0; step <= steps; step += 1) {
-    const t = step / steps;
-    const angle = -Math.PI * 0.72 + t * Math.PI * 1.44;
-    const radial = radius * (1.15 + 0.62 * Math.sin(Math.PI * t));
-    const x = radial * Math.cos(angle);
-    const y = radius * 1.25 * Math.sin(Math.PI * t) - radius * 0.14;
-    const z = radius * 0.22 * Math.sin(t * Math.PI * 3);
-    points.push(new THREE.Vector3(x, y, z));
+  // The alpha-effect should regenerate a poloidal component, so use a
+  // closed meridional loop that follows a dipole-like outer branch and a
+  // tighter interior return branch instead of a decorative wavy ring.
+  for (let step = 0; step <= outerSteps; step += 1) {
+    const theta = thetaMin + ((thetaMax - thetaMin) * step) / outerSteps;
+    const r = Math.max(radius * 1.03, outerScale * Math.sin(theta) ** 2);
+    points.push(new THREE.Vector3(r * Math.sin(theta), r * Math.cos(theta), 0));
   }
 
-  const curve = new THREE.CatmullRomCurve3(points);
+  for (let step = innerSteps; step >= 0; step -= 1) {
+    const theta = thetaMin + ((thetaMax - thetaMin) * step) / innerSteps;
+    const r = innerBase + radius * 0.12 * Math.cos(theta) ** 2;
+    points.push(new THREE.Vector3(r * Math.sin(theta), r * Math.cos(theta), 0));
+  }
+
+  const curve = new THREE.CatmullRomCurve3(points, true);
   const tube = new THREE.Mesh(
-    new THREE.TubeGeometry(curve, 160, 0.034, 10, false),
+    new THREE.TubeGeometry(curve, 220, 0.03, 12, true),
     new THREE.MeshBasicMaterial({
       color,
       transparent: true,
@@ -164,6 +174,7 @@ function createAlphaLoop(radius, phi, color) {
     })
   );
   tube.rotation.y = phi;
+  tube.rotation.z = tilt;
   return tube;
 }
 
@@ -246,8 +257,10 @@ function buildMagnetarExperience(root) {
 
   const alphaGroup = new THREE.Group();
   const alphaLoops = [];
-  for (let index = 0; index < 5; index += 1) {
-    const loop = createAlphaLoop(1.8, (index * Math.PI * 2) / 5 + 0.35, 0xfe8df8);
+  const alphaPhases = [0.18, 2.28, 4.38];
+  const alphaTilts = [0.16, -0.14, 0.12];
+  for (let index = 0; index < alphaPhases.length; index += 1) {
+    const loop = createAlphaLoop(1.78, alphaPhases[index], 0xfe8df8, alphaTilts[index]);
     alphaLoops.push(loop);
     alphaGroup.add(loop);
   }
