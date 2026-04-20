@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>中子星经典模型 3D 动画演示</title>
+  <meta
+    name="description"
+    content="一个可扩展的中子星经典模型 3D 科普网页，包含磁星 alpha-omega 效应、双中子星并合与 SURON 坍塌成黑洞并触发 blitzar FRB。"
+  >
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Neutron Star Model Gallery</p>
+        <h1>中子星经典模型 3D 动画演示</h1>
+        <p class="hero-copy">
+          用一个可扩展的网页，把磁星放大机制、双中子星并合引力波，以及 SURON 坍塌成黑洞并触发 blitzar/FRB 的过程做成立体科普动画。
+        </p>
+      </div>
+      <div class="hero-note">
+        <span class="badge">3D 场景</span>
+        <span class="badge">阶段切换</span>
+        <span class="badge">后续可扩展</span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="left-panel card">
+        <div class="panel-head">
+          <p class="panel-kicker">模型列表</p>
+          <h2>切换动画</h2>
+        </div>
+        <div id="modelButtons" class="model-buttons" aria-label="模型切换按钮"></div>
+
+        <div class="small-note">
+          <p>当前页面采用科普级三维可视化表达，不是数值相对论或磁流体力学仿真。</p>
+          <p>后续新增模型时，只需要在注册表里追加一个新场景对象。</p>
+        </div>
+      </aside>
+
+      <section class="stage-column">
+        <div class="stage-card card">
+          <div class="stage-toolbar">
+            <div>
+              <p class="panel-kicker">3D 场景</p>
+              <h2 id="sceneTitle">加载中...</h2>
+            </div>
+            <div class="toolbar-actions">
+              <button id="playPauseButton" class="ghost-button" type="button">暂停</button>
+              <button id="restartButton" class="ghost-button" type="button">重播</button>
+            </div>
+          </div>
+
+          <div class="canvas-wrap">
+            <canvas id="sceneCanvas" aria-label="中子星三维动画画布"></canvas>
+            <div class="canvas-overlay">
+              <div class="overlay-card">
+                <p class="overlay-label">当前阶段</p>
+                <strong id="stageLabel">-</strong>
+                <p id="stageDescription" class="overlay-copy">-</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="timeline card">
+          <div class="panel-head compact">
+            <p class="panel-kicker">过程拆解</p>
+            <h2>阶段时间线</h2>
+          </div>
+          <div id="stageTimeline" class="timeline-grid"></div>
+        </div>
+      </section>
+
+      <aside class="right-panel card">
+        <div class="panel-head">
+          <p class="panel-kicker">模型说明</p>
+          <h2 id="infoTitle">-</h2>
+        </div>
+
+        <section class="info-block">
+          <h3>核心物理图像</h3>
+          <p id="summaryText"></p>
+        </section>
+
+        <section class="info-block">
+          <h3>动画聚焦点</h3>
+          <ul id="highlightList" class="info-list"></ul>
+        </section>
+
+        <section class="info-block">
+          <h3>参考文献</h3>
+          <p id="citationText"></p>
+        </section>
+
+        <section class="info-block">
+          <h3>说明</h3>
+          <p id="noteText"></p>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
