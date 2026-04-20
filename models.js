@@ -109,33 +109,59 @@ function createStar(radius, color, emissive) {
   return group;
 }
 
-function createDipoleTube(radius, shellRadius, phi, color) {
+function createDipoleTube(radius, shellRadius, phi, color, options = {}) {
   const points = [];
-  const thetaMin = 0.2;
-  const thetaMax = Math.PI - 0.2;
-  const steps = 90;
+  const thetaMin = options.thetaMin ?? 0.14;
+  const thetaMax = options.thetaMax ?? Math.PI - 0.14;
+  const steps = options.steps ?? 140;
+  const thickness = options.thickness ?? 0.028;
+  const opacity = options.opacity ?? 0.78;
+  const yScale = options.yScale ?? 1;
+  const zDrift = options.zDrift ?? 0;
 
   for (let step = 0; step <= steps; step += 1) {
     const theta = thetaMin + ((thetaMax - thetaMin) * step) / steps;
     const r = Math.max(radius * 1.08, shellRadius * Math.sin(theta) ** 2);
     const x = r * Math.sin(theta);
-    const z = r * Math.cos(theta);
-    points.push(new THREE.Vector3(x, 0, z));
+    const z = yScale * r * Math.cos(theta);
+    const y = zDrift * Math.sin(theta) * Math.cos(theta);
+    points.push(new THREE.Vector3(x, y, z));
   }
 
   const curve = new THREE.CatmullRomCurve3(points);
   const tube = new THREE.Mesh(
-    new THREE.TubeGeometry(curve, 120, 0.032, 10, false),
+    new THREE.TubeGeometry(curve, 180, thickness, 12, false),
     new THREE.MeshBasicMaterial({
       color,
       transparent: true,
-      opacity: 0.8,
+      opacity,
       blending: THREE.AdditiveBlending,
       depthWrite: false
     })
   );
   tube.rotation.y = phi;
   return tube;
+}
+
+function createPoloidalFieldGroup(radius, shellRadii, phiOffsets, color, options = {}) {
+  const group = new THREE.Group();
+  const tubes = [];
+
+  phiOffsets.forEach((phi, phiIndex) => {
+    shellRadii.forEach((shellRadius, shellIndex) => {
+      const tube = createDipoleTube(radius, shellRadius, phi, color, {
+        ...options,
+        opacity: (options.opacity ?? 0.72) - shellIndex * 0.07 + phiIndex * 0.01,
+        thickness: Math.max(0.018, (options.thickness ?? 0.026) - shellIndex * 0.003),
+        yScale: 1 + shellIndex * 0.03,
+        zDrift: shellIndex * 0.1
+      });
+      group.add(tube);
+      tubes.push(tube);
+    });
+  });
+
+  return { group, tubes };
 }
 
 function createAlphaLoop(radius, phi, color, tilt = 0) {
@@ -228,12 +254,14 @@ function buildMagnetarExperience(root) {
   const star = createStar(1.55, 0xffb36a, 0xff7f37);
   group.add(star);
 
-  const dipoles = [];
-  for (let index = 0; index < 6; index += 1) {
-    const tube = createDipoleTube(1.55, 4.3, (index * Math.PI) / 3, 0x62d6ff);
-    dipoles.push(tube);
-    group.add(tube);
-  }
+  const { group: dipoleGroup, tubes: dipoles } = createPoloidalFieldGroup(
+    1.55,
+    [2.5, 3.35, 4.45],
+    [0.0, Math.PI / 2, Math.PI / 4],
+    0x62d6ff,
+    { thickness: 0.026, opacity: 0.74 }
+  );
+  group.add(dipoleGroup);
 
   const toroidalGroup = new THREE.Group();
   const toroidalRings = [];
@@ -299,10 +327,10 @@ function buildMagnetarExperience(root) {
       star.userData.glow.material.opacity = 0.7 + wrapping * 0.12 + pulseBoost * 0.2;
 
       dipoles.forEach((tube, index) => {
-        const opacity = 0.36 + 0.22 * (1 - wrapping) + 0.34 * saturation;
+        const opacity = 0.32 + 0.18 * (1 - wrapping) + 0.28 * saturation;
         tube.material.opacity = opacity;
-        tube.scale.setScalar(1 + 0.08 * Math.sin(elapsed * 1.8 + index));
-        tube.rotation.z = Math.sin(elapsed * 0.45 + index) * 0.06;
+        tube.scale.setScalar(1 + 0.04 * Math.sin(elapsed * 1.2 + index * 0.45));
+        tube.rotation.z = Math.sin(elapsed * 0.32 + index * 0.35) * 0.035;
       });
 
       toroidalRings.forEach((ring, index) => {
@@ -474,12 +502,14 @@ function buildBlitzarExperience(root) {
     group.add(ring);
   }
 
-  const dipoles = [];
-  for (let index = 0; index < 5; index += 1) {
-    const tube = createDipoleTube(1.45, 3.9, (index * Math.PI * 2) / 5, 0x8de6ff);
-    dipoles.push(tube);
-    group.add(tube);
-  }
+  const { group: dipoleGroup, tubes: dipoles } = createPoloidalFieldGroup(
+    1.45,
+    [2.25, 3.0, 3.95],
+    [0.0, Math.PI / 2],
+    0x8de6ff,
+    { thickness: 0.024, opacity: 0.74 }
+  );
+  group.add(dipoleGroup);
 
   const blackHole = new THREE.Mesh(
     new THREE.SphereGeometry(1.45, 48, 48),
@@ -561,9 +591,9 @@ function buildBlitzarExperience(root) {
       });
 
       dipoles.forEach((tube, index) => {
-        tube.material.opacity = 0.22 + 0.52 * (1 - collapse) + radioFlash * 0.52;
-        tube.scale.setScalar(1 + collapse * 0.4 + radioFlash * 1.5);
-        tube.rotation.z = Math.sin(elapsed * 0.7 + index) * 0.05;
+        tube.material.opacity = 0.16 + 0.42 * (1 - collapse) + radioFlash * 0.46;
+        tube.scale.setScalar(1 + collapse * 0.28 + radioFlash * 1.2);
+        tube.rotation.z = Math.sin(elapsed * 0.34 + index * 0.4) * 0.03;
       });
 
       blackHole.visible = aftermath > 0.02;
@@ -600,7 +630,7 @@ export const MODEL_DEFINITIONS = [
     summary:
       "这一动画把磁星形成中的经典 α-ω 发电机图像做成了三维示意：初始极向场先被快速自转与微分旋转缠绕成更强的环向磁场，再由 α 效应把局部扭曲环流重新抬升并回接为大尺度磁结构。",
     highlights: [
-      "蓝色弧线表示极向/大尺度磁场，金色环表示被微分旋转缠绕出的环向场。",
+      "蓝色闭合磁力线组表示极向的大尺度 poloidal 场，金色环表示被微分旋转缠绕出的 toroidal 场。",
       "紫色回卷回路表示 α 效应把局部扭曲磁通重新转回到可维持全局磁场的方向。",
       "场强脉动和发光增强用于强调 proto-magnetar 阶段的磁场放大，而不是做严格数值定量。"
     ],
@@ -641,12 +671,12 @@ export const MODEL_DEFINITIONS = [
   },
   {
     id: "suron-blitzar",
-    title: "SURON 坍塌成 BH 与 blitzar-FRB",
+    title: "blitzar-FRB",
     buttonText: "超大质量旋转中子星失稳坍塌并触发 FRB",
     summary:
       "这一动画把 supramassive rotating neutron star (SURON) 的自转支撑、持续 spin-down、临界失稳坍塌成黑洞，以及磁层快速断开释放 blitzar 型 FRB 的过程放在同一个三维场景里展示。",
     highlights: [
-      "蓝色支撑环表示快速自转带来的额外支撑；随时间推移，spin-down 让这部分支撑逐渐减弱。",
+      "蓝色闭合磁力线组表示 SURON 磁层中的大尺度 poloidal 场；淡蓝支撑环表示快速自转带来的额外支撑。",
       "坍塌触发后，中心黑洞出现，原有磁层被快速拉断并向外甩出。",
       "两侧的亮束和膨胀波前表示 blitzar 情景下瞬时射电暴的教学化表达。"
     ],
