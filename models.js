@@ -146,12 +146,13 @@ function createDipoleTube(radius, shellRadius, phi, color, options = {}) {
 function createPoloidalFieldGroup(radius, shellRadii, phiOffsets, color, options = {}) {
   const group = new THREE.Group();
   const tubes = [];
+  const fullPhiOffsets = [...phiOffsets, ...phiOffsets.map((phi) => phi + Math.PI)];
 
-  phiOffsets.forEach((phi, phiIndex) => {
+  fullPhiOffsets.forEach((phi, phiIndex) => {
     shellRadii.forEach((shellRadius, shellIndex) => {
       const tube = createDipoleTube(radius, shellRadius, phi, color, {
         ...options,
-        opacity: (options.opacity ?? 0.72) - shellIndex * 0.07 + phiIndex * 0.01,
+        opacity: (options.opacity ?? 0.72) - shellIndex * 0.07 + (phiIndex % phiOffsets.length) * 0.01,
         thickness: Math.max(0.018, (options.thickness ?? 0.026) - shellIndex * 0.003),
         yScale: 1 + shellIndex * 0.03,
         zDrift: shellIndex * 0.1
